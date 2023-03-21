@@ -11,7 +11,7 @@ Hibernate validation adalah salahsatu driver atau implementasi Bean Validation y
 reference : https://hibernate.org/validator   
 
 Diagram sebelum menggunakan Bean Validator  
-[without bean validation]()
+[without bean validation](https://github.com/alliano/java-bean-validation/blob/master/src/main/resources/imgs/withoutBeanValdation.jpg)
 
 Diagram setelah menggunakan Bean Validation  
-[with bean validation]()
+[with bean validation](https://github.com/alliano/java-bean-validation/blob/master/src/main/resources/imgs/withBeanValidation.jpg)
