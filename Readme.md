@@ -88,3 +88,111 @@ contoh :
         validatorFactory.close();
 	}
 ```
+# Manual Validation
+Sebelum menggunakan Bean Validation, untuk melakukan validasi di java, biasanya dilakukan secara manual.
+biasanya kita menggunakan if else untuk melakukan validasi pengecekan.
+Dan jika terjadi validasi error, biasanya kita akan membuat Exception.
+Pada Bean Validation, cara kira memvalidasi berbeda, kita tidak melakukanya secara manual namun kita akan menggunakan Annotations yang bisa kita simpan pada field, Method, Paramter, dan lain lain.
+
+# Constrain
+Constrain merupakan Annotation yang digunakan sebagai penanda untuk target yang kita tambahkan misalnya Field, Method, Paramter dan lain-lain.
+Bean Validation sudah menyediakan banyak sekali constrain yang bisa langsung kita gunakan.
+Jika kita butuh validation yang berbeda, kita juga bisa membuat constrain secara manual.
+Semua constrain Bean validation ada pada package jakarta.validation.constrain  
+reference : https://jakarta.ee/specifications/bean-validation/3.0/apidocs/
+
+contoh penggunakan constrain :
+``` java
+public class Person {
+	/**
+	 * @NotBlank -> artinya field nga boleh blank atau kosong
+	 * @Size -> digunakan untk membatasi jumlah karkter
+	 * 
+	 * dan masih banyak lagi constrain yang bisa kita gunakan
+	 * untuk lebih lengkapnya bisa lihat di dokumntasi yang terlah saya tuliskan diatas
+	 * */
+    @NotBlank(message = "nama depan gaboleh kosonk")
+    @Size(max = 20, message = "nama depan gaboleh lebih dari 20 karakter")
+    private String firstName;
+    
+    @NotBlank(message = "nama blakang gaboleh kosonk")
+    @Size(max = 20, message = "nama blakang gaboleh lebih dari 20 karakter")
+    private String lastNmae;
+    
+    public Person() {}
+
+    public Person(String firstName, String lastNmae) {
+        this.firstName = firstName;
+        this.lastNmae = lastNmae;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastNmae() {
+        return lastNmae;
+    }
+
+    public void setLastNmae(String lastNmae) {
+        this.lastNmae = lastNmae;
+    }
+}
+```
+
+# Constrain Violation 
+Setelah kita menambahkan annotation constrain kepada class yang akan kita validasi, selanjutnya kita bisa mulai melakukan validasi terhadap Object class tersebut menggunakan method validate() milik class Validator.
+Hasil kembalian dari method validate() adalah Set<ConstrainViolation>, yang mana constrain ciolation tersebut merupakan representasi kesalahan dari constrain.
+Jika terjadi kesalahan pada constrain otomatis akan ada ConstrainViolation namun jika tidak ada kesalahan maka tidak akan ada ConstrainCiolation, alias Set nya (return value dari method validate()) akan berisi data kosong.
+
+contoh :
+``` java
+public class ConstrainViolationTest {
+    
+    private ValidatorFactory falidatorFactory;
+
+    private Validator validator;
+
+    @BeforeEach
+    public void setUp() {
+        this.falidatorFactory = Validation.buildDefaultValidatorFactory();
+        this.validator = this.falidatorFactory.getValidator();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        this.falidatorFactory.close();
+    }
+
+    @Test
+    public void testConstrainViolationFailed() {
+        Person person = new Person();
+        /**
+         * saat kita memanggil validate(person), maka 
+         * validator aka memvalidasi oject person, jikalau
+         * terjadi error validasi maka error tersebut akan masuk ke
+         * constrainViolation,
+         * 
+         * jadi, secara sigkatnya jikalau variabel constrainViolations 
+         * itu ada isinya alias tidak null maka itu tidak error
+         * dan jikalau pada variabel constrainViolations itu ada isinya
+         * maka itu terjadi error.
+         */
+        Set<ConstraintViolation<Person>> constrainViolations = this.validator.validate(person);
+        Assertions.assertEquals(2, constrainViolations.size());
+        for (ConstraintViolation<Person> constrainViolation : constrainViolations) {
+            System.out.println(constrainViolation.getMessage());
+        }
+    }
+}
+```
+
+# Obejct Metadata
+Pada ConstrtainViolation, tidak hanya error message yang bisa kita lihat, kita juga bisa melihat field manaya yang error dan object mana yang error dan lain-lain.
+``` java
+
+```
