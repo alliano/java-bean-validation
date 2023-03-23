@@ -194,5 +194,329 @@ public class ConstrainViolationTest {
 # Obejct Metadata
 Pada ConstrtainViolation, tidak hanya error message yang bisa kita lihat, kita juga bisa melihat field manaya yang error dan object mana yang error dan lain-lain.
 ``` java
-
+    @Test
+    public void testObjectMetadata() {
+        Person person = new Person();
+        Set<ConstraintViolation<Person>> constrainViolations = this.validator.validate(person);
+       for (ConstraintViolation<Person> constrainViolation : constrainViolations) {
+            // untuk mendapatkan persan error
+            System.out.println("Message : "+constrainViolation.getMessage());
+            // untuk mendapatkan object yang di validasi
+            System.out.println("Bean : "+constrainViolation.getLeafBean());
+            // untuk mendapatkan annotasi yang menyebabkan error
+            System.out.println("Constrain : "+constrainViolation.getConstraintDescriptor().getAnnotation());
+            // untuk mendapatkan nilai yang tidak valid
+            System.out.println("Invalid value : "+constrainViolation.getInvalidValue());
+            // untuk mendapatkan field yang terjadi error validasi
+            System.out.println("Path : "+constrainViolation.getPropertyPath());
+       }
+    }
 ```
+
+# Nested Validation
+Jika terjadi nested object, Bean Validation tidak akan validasi terhadap object tersebut.
+Misal kita punya class Person, yang mana class Person memiliki field atau properti dengan tipe class Address, secara defaut class Address tidak akan di validasi.
+Jika kita ingin melakukan validasi terhadap nested object tesebut, kita perlu manambahkan annotation @Valid.
+@Valid juga bisa digunakan untuk nested object yang terdapat didalam array atau collection.
+
+cotnohnya kita memiliki class Addres
+``` java
+import jakarta.validation.constraints.NotBlank;
+
+public class Address {
+    
+    @NotBlank(message = "nama jalan gaboleh kosong")
+    private String street;
+    
+    @NotBlank(message = "nama kota gaboleh kosong")
+    private String city;
+    
+    @NotBlank(message = "nama negara gaboleh kosong")
+    private String country;
+
+    public Address() {
+    }
+
+    public Address(String street, String city, String country) {
+        this.street = street;
+        this.city = city;
+        this.country = country;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+}
+```
+
+dan kita ingin menambajakan field dengan tipe Addres pada class person kita
+``` java
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public class Person {
+
+    @NotBlank(message = "nama depan gaboleh kosonk")
+    @Size(max = 20, message = "nama depan gaboleh lebih dari 20 karakter")
+    private String firstName;
+    
+    @NotBlank(message = "nama blakang gaboleh kosonk")
+    @Size(max = 20, message = "nama blakang gaboleh lebih dari 20 karakter")
+    private String lastNmae;
+    
+    @NotNull(message = "allamat gaboleh kosonk")
+    /**
+     * jika kita ingin object address nya di validasi
+     * maka kita harus meng annotasi dengan annotasi @Valid,
+     * karna jikalau kita tidak annotasi dengan @Valid 
+     * by default object address tidak akan pernah di validasi
+     * jadi meng annotasi dengan @NotBlank saja tidak cukup
+     */
+    @Valid
+    private Address address;
+
+    public Person() {}
+
+    public Person(String firstName, String lastNmae, Address address) {
+        this.firstName = firstName;
+        this.lastNmae = lastNmae;
+    }
+
+    public Address getAddress() {
+        return this.address;
+    }
+
+    public void setAddres(Address address) {
+        this.address = address;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastNmae() {
+        return lastNmae;
+    }
+
+    public void setLastNmae(String lastNmae) {
+        this.lastNmae = lastNmae;
+    }
+
+    @Override
+    public String toString() {
+        return "Person [firstName=" + firstName + ", lastNmae=" + lastNmae + "]";
+    }
+}
+```
+Setelah field Addres di annotasi dengan @Valid maka field Address tersebut akan di validasi
+```java
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+
+public class NestedValidationTest {
+    
+    private Validator validator;
+
+    @BeforeEach
+    public void setUp() {
+        this.validator = Validation.buildDefaultValidatorFactory().getValidator();
+    }
+
+    @Test
+    public void testNestedValidation() {
+        Person person = new Person();
+        person.setFirstName("alliano");
+        person.setLastNmae("alfarez");
+
+        Address address = new Address();
+
+        person.setAddres(address);
+        /**
+         * disini akan terjadi beberapa exception karena object Address
+         * kita belum set value nya
+         * */
+        Set<ConstraintViolation<Person>> violations = this.validator.validate(person);
+
+        for (ConstraintViolation<Person> violation : violations) {
+            System.out.println("message : "+violation.getMessage()); 
+            System.out.println("message : "+violation.getPropertyPath());
+        }
+    }
+}
+```
+
+# Hibernate Validation Constraiain
+Selain annotation Constrain yang terdapat pada Bean Validation.
+Hibbernate Validator juga menyediakan Constrain tambahan.
+Kita bisa melihatnya di package org.hibernate.validator.constrains
+reference : https://docs.jboss.org/hibernate/stable/validator/api/org/hibernate/validator/constrains/package-summary.html
+
+contoh :
+kita memiliki kelas payment yang akan di validasi oleh annotation dari Hibernate Validator
+``` java
+import org.hibernate.validator.constraints.LuhnCheck;
+import org.hibernate.validator.constraints.Range;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+public class Payment {
+    
+    @NotBlank(message = "order id gaboleh kosong")
+    private String orderId;
+
+    /**
+     * @Range adalah Constrain dari Hibernate Validator
+     * fungsi @Range sendiri sama seperti @Min dan @Max pada
+     * Bean Validation,
+     * keuntungan dari @Range ini kita bisa memberi max simal dan minimal
+     * value dengan 1 annotasi,
+     * berbeda dengan Bean validation yang membutuhkan 2 annotasi yaitu 
+     * @Min dan @Max
+     */
+    @Range(min = 10_000L, max = 100_000_000, message = "amount gaboleh kurang dari 10.000 dan gaboleh lebih dari 100.000.000")
+    @NotNull(message = "ammount gaboleh kosong")
+    private Long amount;
+
+    /**
+     * @LunCheck adalah annotasi dari Hibbernate Validator
+     * yang mana fungsi dari @LunCheck ini untuk memvalidasi 
+     * sebuah nomer kartu keredit
+     * 
+     * dan sebenarnya masih banayak lagi constrain yang diberikan
+     * oleh Hibbernate Validaor
+     */
+    @LuhnCheck(message = "kartu keredit tidak valid")
+    @NotBlank(message = "kartu keredit gaboleh kosong")
+    private String creditCard;
+
+    public Payment() {
+    }
+
+    public Payment(String orderId, Long amount, String creditCard) {
+        this.orderId = orderId;
+        this.amount = amount;
+        this.creditCard = creditCard;
+    }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public Long getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Long amount) {
+        this.amount = amount;
+    }
+
+    public String getCreditCard() {
+        return creditCard;
+    }
+
+    public void setCreditCard(String creditCard) {
+        this.creditCard = creditCard;
+    }
+
+    @Override
+    public String toString() {
+        return "Payment [orderId=" + orderId + ", amount=" + amount + ", creditCard=" + creditCard + "]";
+    }
+}
+```
+
+kita buat abstrac claass untuk mengatasi kode yang rendudan misalnya seperti pembuatan pembuatan object Validator dan ValidatorFactory pada setiap class unit test, disini kita menggunakan unti test hanya untuk pengetesan saja, pada real study case biasanya nanti kita tidak menggunakan unit test.
+``` java
+import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+
+public abstract class AbstracValidatorTest {
+    
+    protected ValidatorFactory validatorFactory;
+
+    protected Validator validator;
+
+    @BeforeEach
+    public void setUp() {
+        this.validatorFactory = Validation.buildDefaultValidatorFactory();
+        this.validator = this.validatorFactory.getValidator();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        this.validatorFactory.close();
+    }
+
+    public void validate(Object object) {
+        Set<ConstraintViolation<Object>> violations = this.validator.validate(object);
+        for (ConstraintViolation<Object> violation : violations) {
+            System.out.println("Error message : "+violation.getMessage());
+            System.out.println("Error Field : "+violation.getPropertyPath());
+        }
+    }
+}
+```
+
+lalu kita test dengan menggunakan bantuan unit test, pada real study case mungkin nanti kita tidak akan menggunakan unit test melaikan langsung di layer model pada applikasi kita.
+``` java
+public class HibbernateValidationConstrainTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testHibernateVaidationCOnstrainInvalid() {
+        Payment payment = new Payment();
+        payment.setAmount(1000L);
+        payment.setCreditCard("0092");
+        payment.setOrderId("001");
+        
+        validate(payment);
+    }
+
+    @Test
+    public void testHibernateVaidationConstrainFalid() {
+        Payment payment = new Payment();
+        payment.setAmount(80_000L);
+        payment.setCreditCard("4111111111111111");
+        payment.setOrderId("001");
+        validate(payment);
+    }
+}
+```
+
