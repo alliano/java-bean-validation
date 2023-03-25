@@ -796,3 +796,117 @@ public class PayloadTest extends AbstracValidatorTest {
     }
 }
 ```
+
+# Method Validation
+Bean validation bisa digunakan untuk melakukan validasi di method, baik itu method paramter atau return value.
+Fitur ini ,memmudahkan pada developer java karena cukup menambahkan constrain annotasi pada method paramter.
+
+# ExecutableValidator
+Untuk melakukan validasi pada method, kita membutuhkan object ExecutableValidato.
+Untuk membuat ExecutableValidator, kita bisa gunakan mehod forExecutables() dari validator.
+reference : https://jakarta.ee/specifications/bean-validation/3.0/apidocs/jakarta/validation/executable/executablevalidator
+
+``` java
+    /**
+     * saat kita ingin memvalidasi suatu method, kita terlebih dahulu 
+     * megannotasi method tersebut dengan annotation constrain
+     * pada contoh kali ini paramter dan return value nya di annotasi
+     * dengan annotasi constrain
+     * @param name
+     */
+    public void greeting(@NotBlank(message = "name can't be blank") String name) {
+        System.out.println("Hello my name ".concat(name));
+    }
+
+    @NotBlank(message = "full name can't be blank")
+    public String fullName() {
+        return this.firstName+" "+this.lastNmae;
+    }
+```
+
+untuk melakukan validasi nya kita harus membuat object ExecutableValidator dari Validator. kita bisa edit class AbstracValidatorTest untuk menambahkan object ExecutableValidator.
+``` java
+public abstract class AbstracValidatorTest {
+    
+    protected ValidatorFactory validatorFactory;
+
+    protected Validator validator;
+
+    protected ExecutableValidator executableValidator;
+
+    @BeforeEach
+    public void setUp() {
+        this.validatorFactory = Validation.buildDefaultValidatorFactory();
+        this.validator = this.validatorFactory.getValidator();
+        this.executableValidator = validator.forExecutables();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        this.validatorFactory.close();
+    }
+
+    public void validate(Object object) {
+        Set<ConstraintViolation<Object>> violations = this.validator.validate(object);
+        for (ConstraintViolation<Object> violation : violations) {
+            System.out.println("Error message : "+violation.getMessage());
+            System.out.println("Error Field : "+violation.getPropertyPath());
+        }
+    }
+    public void validateWithGroups(Object object, Class<?> ...groups) {
+        Set<ConstraintViolation<Object>> violations = this.validator.validate(object, groups);
+        for (ConstraintViolation<Object> violation : violations) {
+            System.out.println("Error message : "+violation.getMessage());
+            System.out.println("Error Field : "+violation.getPropertyPath());
+        }
+    }
+}
+```
+
+test method validation
+``` java
+public class MethodValidationTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testMethodValidationParameter() throws NoSuchMethodException, SecurityException {
+        Person person = new Person();
+
+        String name = "";
+
+        Method method = Person.class.getMethod("greeting", String.class);
+
+        Set<ConstraintViolation<Person>> violations = this.executableValidator.validateParameters(person, method, new Object[]{name});
+        /**
+         * violation nya akan memiliki value dikarnakan varible name diatas
+         * tidak ada value nya
+         */
+        for (ConstraintViolation<Person> violation : violations) {
+            System.out.println(violation.getPropertyPath());
+            System.out.println(violation.getMessage());
+            System.out.println("----------------------");
+        }
+    }
+
+    @Test
+    public void testMethodValidationReturnValue() throws NoSuchMethodException, SecurityException {
+        Person person = new Person();
+        person.setFirstName("");
+        person.setLastNmae("");
+
+        Method method = person.getClass().getMethod("fullName");
+        String returnValue = person.fullName();
+        /**
+         * violation akan memiliki value karena terjadi error validasi
+         * error validasi terjadi karena kita nga ngeset firstname dan lastname nya
+         * jadi pas method fullName di panggil method tersebut
+         * mengembalikan value null
+         */
+        Set<ConstraintViolation<Person>> violations = this.executableValidator.validateReturnValue(person, method, returnValue);
+        for (ConstraintViolation<Person> violation : violations) {
+            System.out.println(violation.getPropertyPath());
+            System.out.println(violation.getMessage());
+            System.out.println("---------------");
+        }
+    }
+}
+```
