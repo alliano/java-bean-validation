@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import jakarta.validation.executable.ExecutableValidator;
 
 public abstract class AbstracValidatorTest {
     
@@ -16,10 +17,13 @@ public abstract class AbstracValidatorTest {
 
     protected Validator validator;
 
+    protected ExecutableValidator executableValidator;
+
     @BeforeEach
     public void setUp() {
         this.validatorFactory = Validation.buildDefaultValidatorFactory();
         this.validator = this.validatorFactory.getValidator();
+        this.executableValidator = validator.forExecutables();
     }
 
     @AfterEach
