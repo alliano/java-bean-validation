@@ -34,4 +34,11 @@ public abstract class AbstracValidatorTest {
             System.out.println("Error Field : "+violation.getPropertyPath());
         }
     }
+    public void validateWithGroups(Object object, Class<?> ...groups) {
+        Set<ConstraintViolation<Object>> violations = this.validator.validate(object, groups);
+        for (ConstraintViolation<Object> violation : violations) {
+            System.out.println("Error message : "+violation.getMessage());
+            System.out.println("Error Field : "+violation.getPropertyPath());
+        }
+    }
 }
