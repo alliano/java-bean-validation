@@ -740,3 +740,59 @@ public class ConvertGroupTest extends AbstracValidatorTest {
     }
 }
 ```
+
+# Payload 
+Secara default aturan annotation constrain di bean validation selain memiliki method message, groups, ada juga payload.
+Method payload itu sebenarnya tidak digunakan sama sekali oleh bean validation, namun method ini bisa kita gunakan untuk menambahkan informasi ketika menggunakan constrain.
+reference : https://jakarta.ee/specifications/bean-validation/3.0/apidocs/jakarta/validation/payload
+
+# Membuat Payload
+Sekarang kita akan mencoba membuat payload yang sederhana.
+Payload yang akan kita buat adalah sebuah class yang mna jika terjadi validation error, kita akan gunakan payload tersebut unutk mengirim notifikasi.
+
+kode membuat payload.
+``` java
+public class EmailErrorPayload implements Payload {
+    
+    public void sendEmail(ConstraintViolation<?> violation) {
+        System.out.println("payload trigered when error : "+violation.getMessage());
+    }
+}
+```
+menggunakan payload pada constrain.
+``` java
+@NotBlank(message = "virtual account can't be blank", groups = {VirtualAccountPaymentGroup.class}, payload = {EmailErrorPayload.class})
+private String virtualAccount;
+```
+test payload
+``` java
+public class PayloadTest extends AbstracValidatorTest {
+
+    @Test
+    public void testPayload() {
+        Payment payment = new Payment();
+        payment.setOrderId("001");
+        payment.setAmount(50_000L);
+        payment.setCreditCard("4111111111111111");
+        Customer customer = new Customer();
+        customer.setEmail("allianoanonymous@gmail.com");
+        customer.setName("alliano");
+        payment.setCustomer(customer);
+        /**
+         * disini kita tidak meng set nila dari fild virtual account
+         * harapanya nanti akan terjadi error lalu error tersebut kita akan 
+         * ambil payload nya dan mentriger nya
+         */
+       Set<ConstraintViolation<Payment>> violations = this.validator.validate(payment, VirtualAccountPaymentGroup.class);
+       for (ConstraintViolation<Payment> violation : violations) {
+           System.out.println("error field : "+violation.getPropertyPath());
+           violation.getConstraintDescriptor().getPayload().forEach( aClass -> {
+                if(aClass == EmailErrorPayload.class) {
+                    EmailErrorPayload emailErrorPayload = new EmailErrorPayload();
+                    emailErrorPayload.sendEmail(violation);
+                }
+           });
+       }
+    }
+}
+```
