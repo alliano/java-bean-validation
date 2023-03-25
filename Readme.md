@@ -16,7 +16,7 @@ Jika kita tidak menggunakan Bean Validation, maka kita akan membuat Bean Validat
 
 Diagram setelah menggunakan Bean Validation  
 ![with bean validation](https://github.com/alliano/java-bean-validation/blob/master/src/main/resources/imgs/withBeanValidation.jpg)
-Setelah menggunakan Bean Validation kita akan membuat Validasi nya terpusat, jadi layer-layer lain seprrti Presentation Layer, Bussines Layer, dan Data Access layer akan melakuakn custom validasi secara rendudan.
+Setelah menggunakan Bean Validation kita akan membuat Validasi nya terpusat, jadi layer-layer lain seprrti Presentation Layer, Bussines Layer, dan Data Access layer tidak akan melakuakn custom validasi secara rendudan.
 
 # Jakarta Bean Validation
 Saat ini varsi terbaru dari Bean Validation adalah versi 3. Bean Validation versi 2 masih menggunakan nama Java Enterprise Edition, sedangkan Bean Validation versi 3 megubah namanya menjadi Jakarta Enterprise Edition.
@@ -520,3 +520,223 @@ public class HibbernateValidationConstrainTest extends AbstracValidatorTest {
 }
 ```
 
+# Grouping COnstrain
+Secara default, saat Validator melakukan validasi, Validator akan memvalidasi semua field yang di annotasi Constrain.
+Kadang, ada kalanya saat kita misalnya ingin melakukan pengecekan beberapa hal saja pada kondisi tertentu, misal terdapat satu class yang digunakan utuk beberapa aksi, sehingga membutuhkan kombinasi validasi yang berbeda.
+Dalam study case ini kita akan menggunakan grouping constrain.
+Grouping constrain merukapan teknik menelompokan constrain yang terdapat pada class.
+Dengan menggunakan Group, saat melakukan validasi kita bisa memilih group mana yang akan divalidasi.
+Semua Constrain bisa memiliki lebih dari 1 group.
+
+Untuk mengrouping constrain kita membuatuhkan flaging atau mark dengan menggunkan interface kosong.
+``` java
+public interface CreditCardPaymentGroup { }
+```
+``` java
+public interface VirtualAccountPaymentGroup { }
+```
+
+cara untuk mengrouping nya sebagai berikut :
+``` java
+ /**
+  * untuk mengrouping suatu field kita cukup tambahkan
+  * paramter groups pada constrain nya dan diikuti dengan 
+  * interface yang telah kita buat untuk flaging dalam
+  * kasus ini adalah  VirtualAccountPaymentGroup dan
+  * CreditCardPaymentGroup
+  */
+ @NotBlank(message = "order id can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+ private String orderId;
+
+ @Range(min = 10_000L, max = 100_000_000, message = "amount can't les than 10.000 and can't more than 100.000.000", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+ @NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+ private Long amount;
+
+ @LuhnCheck(message = "credit card is invalid", groups = {CreditCardPaymentGroup.class})
+ @NotBlank(message = "credit card can't be blank", groups = {CreditCardPaymentGroup.class})
+ private String creditCard;
+
+ @NotBlank(message = "virtual account can't be blank", groups = {VirtualAccountPaymentGroup.class})
+ private String virtualAccount;
+```
+
+untuk mengetes grouping yang telah kita buat kita bisa menggunakan junit, nanti pada real case
+mugkin kita tidak menggunakan unit test, melainkan langsung pada layer pada applikasi.
+``` java
+import org.junit.jupiter.api.Test;
+
+public class GroupTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testCreditCardPaymentGroupFaill() {
+        Payment payment = new Payment();
+        payment.setAmount(20_000L);
+        payment.setCreditCard("011");
+        payment.setOrderId("001");
+        payment.setVirtualAccount("+628");
+        validateWithGroups(payment, CreditCardPaymentGroup.class);      
+    }
+
+    @Test
+    public void testCreditCardPaymentGroupSuccess() {
+        Payment payment = new Payment();
+        payment.setAmount(20_000L);
+        payment.setCreditCard("4111111111111111");
+        payment.setOrderId("001");
+        payment.setVirtualAccount("+628");
+        /**
+         * secara degault jikau constrain pada class payment itu kita 
+         * grouping maka Vaidator tidak akan memvalidasi nya.
+         * Jikalau kita ingin Validator tetap memvalidasi walaupun kita sudah grouping
+         * maka kita harus menambahkan flagind Default.class pada constrain nya.
+         * 
+         * agar validator memvalidasinya kita harus tambahakan paramter grouping pada 
+         * saat kita validasi.
+         * 
+         * jikalau kita hanya meberikan 1 groub saja misalnya VirtualAccountPaymentGroup
+         * maka field yang akan di validasi hanya field yang memiliki group VirtualAccountPaymentGroup
+         * saja
+         */
+        validateWithGroups(payment,VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class);
+    }
+}
+```
+# Group Sequence
+Saat kita melakukan validasi dengan beberapa group, tidak ada jaminan bahwa sebuah group akan dijalankan sebelum group yang lain.
+Bean Validation memiliki annotasi @GroupSequence yang bisa digunakan untuk menentukan tahapan group mana terlebih dahulu yang akan di validasi.
+Untuk membggunakan annotasi @GroupSequence kita terlebih dahulu membuat interface flaging utuk group lalu tambahkan annotasi @GroupSequence.
+``` java
+/**
+ * jadi jikalau nanti terjadi error validasi pada 
+ * group CreditCardPaymentGroup maka 
+ * group selanjutnya tidak akan di eksekusi
+ */
+@GroupSequence(value = {
+    CreditCardPaymentGroup.class,
+    VirtualAccountPaymentGroup.class
+})
+public interface PaymentGroup { }
+```
+
+test @GroupSequence
+``` java
+public class GroupSequenceTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testGroupSequenceFaill() {
+        Payment payment = new Payment();
+        validateWithGroups(payment, PaymentGroup.class);
+    }
+
+    @Test
+    public void testGroupSequenceSuccess() {
+        Payment payment = new Payment();
+        payment.setAmount(50_000_000L);
+        payment.setCreditCard("4111111111111111");
+        payment.setOrderId("001");
+        payment.setVirtualAccount("+62813");
+        validateWithGroups(payment, PaymentGroup.class);
+    }
+}
+```
+
+# Group Conversion
+Kadang ada kasus yangmna terdapat sebuah class yang sudah memiliki field group, namun ternyata kita membutuhkan class tersebut unutk di embed di class lain, sedangkan class lain tersebut menggunakan group berbeda.
+Pada kasus seperti ini kita bisa meng konversi group.
+Untuk melakukan konversi group, kita busa menggunakan annotasi @ConvertGroup lalu tentukan dari group apa ke group apa.
+
+misalnya kita memiliki class Customer yang akan di embed di class Payment
+``` java
+public class Customer {
+    
+    @Email(message = "email is invalid")
+    @NotBlank(message = "email is required")
+    private String email;
+
+    @NotBlank(message = "name is required")
+    private String name;
+
+    public Customer() {
+    }
+
+    public Customer(
+        @Email(message = "email is invalid") 
+        @NotBlank(message = "email is required") String email,
+        @NotBlank(message = "name is required") String name) {
+        this.email = email;
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "Customer [email=" + email + ", name=" + name + "]";
+    }
+}
+```
+lalu kita embed di class Payment 
+``` java
+    /**
+     * ini walaupun kita telah meng annotasi @Valid pada filed ini
+     * akan tetapi field ini datanya tidak akan pernah di validasi oleh 
+     * java bean vaidation dikarnakan field ini di flaging/grouping
+     * dengan VirtualAccountPaymentGroup dan CreditCardPaymentGroup
+     * sedangkan field data customer ini kita tidak grouping samasekali
+     * maka field tersebut akan menggunakan flaging/groping Default
+     * 
+     * agar data dari field customer di validasi juga, kita harus mengkonversi 
+     * flaging nya dengan menggunakan annotasi @ConvertGroup
+     */
+    @Valid
+    @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class)
+    @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class)
+    private Customer customer;
+```
+lalu kita bisa validasi
+``` java
+public class ConvertGroupTest extends AbstracValidatorTest {
+
+    @Test
+    public void testConvertGroupFailed() {
+        Payment payment = new Payment();
+        payment.setOrderId("001");
+        payment.setAmount(30_000L);
+        payment.setCreditCard("4111111111111111");
+        payment.setVirtualAccount("+62813");
+        Customer customer = new Customer();
+        payment.setCustomer(customer);
+
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class);
+    }
+
+    @Test
+    public void testConvertGroupFailedSuccess() {
+        Payment payment = new Payment();
+        payment.setOrderId("001");
+        payment.setAmount(30_000L);
+        payment.setCreditCard("4111111111111111");
+        payment.setVirtualAccount("+62813");
+        Customer customer = new Customer();
+        customer.setEmail("allianoanoanymous@gmail.com");
+        customer.setName("Alliano");
+        payment.setCustomer(customer);
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class);
+    }
+}
+```
