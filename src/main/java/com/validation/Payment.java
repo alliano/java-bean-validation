@@ -32,7 +32,7 @@ public class Payment {
     @NotBlank(message = "credit card can't be blank", groups = {CreditCardPaymentGroup.class})
     private String creditCard;
 
-    @NotBlank(message = "virtual account can't be blank", groups = {VirtualAccountPaymentGroup.class})
+    @NotBlank(message = "virtual account can't be blank", groups = {VirtualAccountPaymentGroup.class}, payload = {EmailErrorPayload.class})
     private String virtualAccount;
 
     /**
@@ -47,7 +47,7 @@ public class Payment {
      * flaging nya dengan menggunakan annotasi @ConvertGroup
      */
     @Valid
-    @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class}, payload = {EmailErrorPayload.class})
     @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class)
     @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class)
     private Customer customer;
