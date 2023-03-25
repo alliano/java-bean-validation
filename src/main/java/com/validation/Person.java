@@ -61,4 +61,21 @@ public class Person {
     public String toString() {
         return "Person [firstName=" + firstName + ", lastNmae=" + lastNmae + "]";
     }
+
+    
+    /**
+     * saat kita ingin memvalidasi suatu method kita terlebih dahulu 
+     * megannotasi method tersebut dengan annotation constrain
+     * pada contoh kali ini paramter dan return value nya di annotasi
+     * dengan annotasi constrain
+     * @param name
+     */
+    public void greeting(@NotBlank(message = "name can't be blank") String name) {
+        System.out.println("Hello my name ".concat(name));
+    }
+
+    @NotBlank(message = "full name can't be blank")
+    public String fullName() {
+        return this.firstName+" "+this.lastNmae;
+    }
 }
