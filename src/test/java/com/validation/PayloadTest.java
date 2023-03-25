@@ -13,7 +13,7 @@ public class PayloadTest extends AbstracValidatorTest {
     @Test
     public void testPayload() {
         Payment payment = new Payment();
-        payment.setOrderId("001");
+        payment.setOrderId("001"); 
         payment.setAmount(50_000L);
         payment.setCreditCard("4111111111111111");
         Customer customer = new Customer();
