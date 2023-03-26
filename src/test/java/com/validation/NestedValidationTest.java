@@ -26,7 +26,7 @@ public class NestedValidationTest {
 
         Address address = new Address();
 
-        person.setAddres(address);
+        person.setAddress(address);
 
         Set<ConstraintViolation<Person>> violations = this.validator.validate(person);
 
