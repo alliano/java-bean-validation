@@ -910,3 +910,113 @@ public class MethodValidationTest extends AbstracValidatorTest {
     }
 }
 ```
+
+# Constructor Validation 
+ExecutableValidator tidak hanya bisa digunakan unutuk melakukan validasi terhadap method paramter dan method return value, tetapi bisa digunakan untuk constructor paramterter dan constructor return value.
+Cara penggunaanya sama dengan melakukan validasi pada method, yaang membedakan cuman method yang digunakan utntuk validadasi nya.
+
+contoh :
+``` java
+ /**
+  * disini kita memiliki constructor Person yang semua 
+  * paramternya di annotasi dengan annotasi constrain 
+  * dari bean validation agar nanti nya paramter tersebut
+  * di validasi oleh bean vaidation
+  * @param firstName
+  * @param lastNmae
+  * @param address
+  */
+ public Person(
+        @NotBlank(message = "nama depan gaboleh kosonk") @Size(max = 20, message = "nama depan gableh lebih dari 20 karakter") String firstName,
+        @NotBlank(message = "nama blakang gaboleh kosonk") @Size(max = 20, message = "nama blaang gaboleh lebih dari 20 karakter") String lastNmae,
+        @NotNull(message = "allamat gaboleh kosonk") @Valid Address address) {
+    this.firstName = firstName;
+    this.lastNmae = lastNmae;
+    this.address = address;
+}
+```
+
+test validate Construcor
+``` java
+ @Test
+ public void testConstructorValidatorParameter() throws NoSuchMethodException, SecurityException {
+     Person person = new Person();
+     String firstName = "";
+     String lastName = "";
+     Address address = new Address();
+    //ini kita ambil construcor nya dari class person
+    Constructor<? extends Person> constructor = person.getClass().getConstructor(String.class, String.class, Address.class);
+     /**
+     * ini kita validasi constructor nya menggunakan method executableValidator
+     * dengan method validateConstructorParameters(), yang menerima tiga paramterer
+     * paremter pertama adalah consturctor yang akan di validasi,
+     * parameter ke dua adalah parameter dari constructor yang akan kita validasi
+     */
+    Set<ConstraintViolation<Person>> violations = this.executableValidator.validateConstructorParameters(constructor, new Object[]{firstName, lastName, address});
+    violations.forEach( violation -> {
+        System.out.println("Field Error : "+violation.getPropertyPath());
+        System.out.println("Error Message : "+violation.getMessage());
+        System.out.println("============================");
+    });
+}
+```
+
+# Messagge Interpolation
+Message Interpolation merupakan proses pembuatan pesan error ketika terjadi kesalahan pada constrain.
+Secara default, pesan kesalahan akan di ambil dari method message() milik constrain.
+
+# Special Character
+Message Interpolation memiliki karakteristik special yaitu {}, oleh karna itu jika kita ingin menggunakan Karakter tersubut, kita perlu tambahkan \ didepan karakter tersebut, contoh nya \\{atau\\}.
+Kadang ketika kita membuat pesan kesalahan, kita ingin mengambil value dari constrain nya, kita bisa melakukanya dengan cara memanggil method didalam kurung kurawal {method}, maka secara otomatis nilai constrain akan di tambahkan ke message nya.
+
+contoh :
+``` java
+@NotBlank(message = "order id can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Size(max = 10, min = 1, message = "order id can't less than {min} and can't more than {max}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private String orderId;
+
+@Range(min = 10_000L, max = 100_000_000, message = "amount can't les than {min} and can't more than {max}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private Long amount;
+```
+
+setelah itu kita bisa mengetesnya dengan bantuan unit test
+``` java
+public class MessageInterpolationTest extends AbstracValidatorTest {
+    @Test
+    public void testMessageInterpolation() {
+        Payment payment = new Payment();
+        payment.setAmount(500_000_000L);
+        payment.setCreditCard("347237432479973");
+        payment.setOrderId("");
+        payment.setVirtualAccount("");
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class);
+    }
+}
+```
+
+# Resource Bundle
+Selain hard code pesan didalam method message(), Bean Validation juga mendukung resource bundle, dimna kita bisa menyimpan semua pesan kesalahan didalam suatu file.
+Hall ini sangat bagus ketika kita butuh mendukung pesan kesalahan dengan beberapa bahasa.
+Caranya kita cukup membuat file dengan nama ValidationMessage.properties dialam folder resources.
+setelah membuat file tersebut kita bisa menambhakan key value untuk pesan kesalahan nya.
+
+contoh :
+``` properties
+order.id.notblank = order id can't be blank
+order.id.size = order id can't less than {min} and can't more than {max}
+order.amount.range = amout can't less than {min} and can't more than {max}
+```
+
+cara penggunaanya cukup simpel, kita hanya meuliskan key yang ada didalam propertiesnya didalam method message pada constrain.
+
+contoh :
+``` java
+@NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private String orderId;
+
+@Range(min = 10_000L, max = 100_000_000, message = "{order.amount.range}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private Long amount;
+```
