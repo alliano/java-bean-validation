@@ -26,19 +26,39 @@ public class Person {
     @Valid
     private Address address;
 
-    public Person() {}
-
-    public Person(String firstName, String lastNmae, Address address) {
+    /**
+     * disini kita annotasi dengan annotasi constrain semua parameternya
+     * agar nanti di validasi oleh bean validation
+     * @param firstName
+     * @param lastNmae
+     * @param address
+     */
+    public Person(
+            @NotBlank(message = "nama depan gaboleh kosonk") @Size(max = 20, message = "nama depan gaboleh lebih dari 20 karakter") String firstName,
+            @NotBlank(message = "nama blakang gaboleh kosonk") @Size(max = 20, message = "nama blakang gaboleh lebih dari 20 karakter") String lastNmae,
+            @NotNull(message = "allamat gaboleh kosonk") @Valid Address address) {
         this.firstName = firstName;
         this.lastNmae = lastNmae;
-    }
-
-    public Address getAddress() {
-        return this.address;
-    }
-
-    public void setAddres(Address address) {
         this.address = address;
+    }
+
+    @Valid
+    public Person() {}
+    
+    /**
+     * saat kita ingin memvalidasi suatu method kita terlebih dahulu 
+     * megannotasi method tersebut dengan annotation constrain
+     * pada contoh kali ini paramter dan return value nya di annotasi
+     * dengan annotasi constrain
+     * @param name
+     */
+    public void greeting(@NotBlank(message = "name can't be blank") String name) {
+        System.out.println("Hello my name ".concat(name));
+    }
+
+    @NotBlank(message = "full name can't be blank")
+    public String fullName() {
+        return this.firstName+" "+this.lastNmae;
     }
 
     public String getFirstName() {
@@ -57,25 +77,11 @@ public class Person {
         this.lastNmae = lastNmae;
     }
 
-    @Override
-    public String toString() {
-        return "Person [firstName=" + firstName + ", lastNmae=" + lastNmae + "]";
+    public Address getAddress() {
+        return address;
     }
 
-    
-    /**
-     * saat kita ingin memvalidasi suatu method kita terlebih dahulu 
-     * megannotasi method tersebut dengan annotation constrain
-     * pada contoh kali ini paramter dan return value nya di annotasi
-     * dengan annotasi constrain
-     * @param name
-     */
-    public void greeting(@NotBlank(message = "name can't be blank") String name) {
-        System.out.println("Hello my name ".concat(name));
-    }
-
-    @NotBlank(message = "full name can't be blank")
-    public String fullName() {
-        return this.firstName+" "+this.lastNmae;
+    public void setAddress(Address address) {
+        this.address = address;
     }
 }
