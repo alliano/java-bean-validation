@@ -27,14 +27,14 @@ public class Payment {
     private String orderId;
 
     @Range(min = 10_000L, max = 100_000_000, message = "{order.amount.range}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
-    @NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @NotNull(message = "{payment.amount.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     private Long amount;
 
     @LuhnCheck(message = "credit card is invalid", groups = {CreditCardPaymentGroup.class})
-    @NotBlank(message = "credit card can't be blank", groups = {CreditCardPaymentGroup.class})
+    @NotBlank(message = "{payment.creaditcard.notblank}", groups = {CreditCardPaymentGroup.class})
     private String creditCard;
 
-    @NotBlank(message = "virtual account can't be blank", groups = {VirtualAccountPaymentGroup.class}, payload = {EmailErrorPayload.class})
+    @NotBlank(message = "{payment.virtualaccount.notblank}", groups = {VirtualAccountPaymentGroup.class}, payload = {EmailErrorPayload.class})
     private String virtualAccount;
 
     /**
@@ -49,18 +49,18 @@ public class Payment {
      * flaging nya dengan menggunakan annotasi @ConvertGroup
      */
     @Valid
-    @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class}, payload = {EmailErrorPayload.class})
+    @NotNull(message = "{payment.customer.notnull}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class}, payload = {EmailErrorPayload.class})
     @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class)
     @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class)
     private Customer customer;
 
     public Payment(
-            @NotBlank(message = "order id can't be blank", groups = { VirtualAccountPaymentGroup.class,CreditCardPaymentGroup.class }) String orderId,
-            @Range(min = 10_000L, max = 100_000_000L, message = "amount can't les than 10.000 and can't more than 100.000.000", groups = { VirtualAccountPaymentGroup.class,CreditCardPaymentGroup.class })
-            @NotNull(message = "amount can't be blank", groups = { VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class }) Long amount,
-            @LuhnCheck(message = "credit card is invalid", groups = CreditCardPaymentGroup.class) @NotBlank(message = "credit card can't be blank", groups = CreditCardPaymentGroup.class) String creditCard,
-            @NotBlank(message = "virtual account can't be blank", groups = VirtualAccountPaymentGroup.class) String virtualAccount,
-            @Valid @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class}) @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class) @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class) Customer customer) {
+            @NotBlank(message = "{order.id.notblank}", groups = { VirtualAccountPaymentGroup.class,CreditCardPaymentGroup.class }) String orderId,
+            @Range(min = 10_000L, max = 100_000_000L, message = "{order.amount.range}", groups = { VirtualAccountPaymentGroup.class,CreditCardPaymentGroup.class })
+            @NotNull(message = "{payment.amount.notblank}", groups = { VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class }) Long amount,
+            @LuhnCheck(message = "{payment.creaditcard.invalid }", groups = CreditCardPaymentGroup.class) @NotBlank(message = "{payment.creaditcard.notblank}", groups = CreditCardPaymentGroup.class) String creditCard,
+            @NotBlank(message = "{payment.virtualaccount.notblank}", groups = VirtualAccountPaymentGroup.class) String virtualAccount,
+            @Valid @NotNull(message = "{payment.customer.notnull}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class}) @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class) @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class) Customer customer) {
         this.orderId = orderId;
         this.amount = amount;
         this.creditCard = creditCard;
