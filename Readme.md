@@ -1020,3 +1020,66 @@ private String orderId;
 @NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
 private Long amount;
 ```
+
+# Message Internationalization
+Secara default saat kita menggunakan Resource Bundle, Locale yang akan dipilih adalah Locale.gerDefault().
+jadi jikalau kita ingin merubah Locale untuk resource bundle nya, kita harus mengubah default locale nya.
+Misalnya kita punya Resorce bundle dengan ValidationMessages_id_ID.properties untk menyimpan semua error message dalam bahasa indonesia, yang isinya :
+
+``` proeperties
+order.id.notblank = order id tidak boleh kosong
+order.id.size = order id tidak boleh kurang dari {min} karakter dan tidak boleh lebih dari {max} karakter
+order.amount.range = jumlah tidakboleh kurang dari {min} dan tidak boleh lebih dari {max}   
+```
+setelah itu untuk mengubah bahsa message yang akan di tampilkan sebagai berikut :
+``` java
+@Test
+public void testMessageInternationalization() {
+    Payment payment = new Payment();
+    payment.setAmount(500_000_000L);
+    payment.setCreditCard("214072347932");
+    payment.setCustomer(null);
+    payment.setVirtualAccount(null);
+    payment.setOrderId("94873374274638");
+    /**
+     * sebelum kita validasi kita ubah terlebih dahulu Locale default ny
+     */
+    Locale.setDefault(Locale.of("id", "ID"));
+    Set<ConstraintViolation<Payment>> violations = this.validator.validate(payment, VirtualAccountPaymentGroup.class);
+    violations.forEach(violation -> {
+        System.out.println("Error message : "+violation.getMessage());
+        System.out.println("Error filed : "+violation.getPropertyPath());
+        System.out.println("================");
+    });
+}
+```
+
+# MessageInterpolator
+ini adalah salah satu yang cukup rumit namun sangat fleksibel adalah dengan menggunakan MessageInterpolator secara langsung.
+Cara ini lumayan sulit karena kita harus membuat Context secara manual unutuk Messageinterpolator.
+Kita tidak perlu mengubah default Locale, hanya cukup gunakan parameter locale pada MessageInterpolator.  
+Referece : [jakarta.ee](https://jakarta.ee/specifications/bean-validation/3.0/apidocs/jakarta/validation/messageinterpolator)
+
+contoh :
+``` java
+@Test
+public void testMessageInternationalizationInterpolator() {
+    Payment payment = new Payment();
+    payment.setAmount(500_000_000L);
+    payment.setCreditCard("");
+    payment.setCustomer(null);
+    payment.setVirtualAccount(null);
+    payment.setOrderId("");
+    Set<ConstraintViolation<Payment>> violations = this.validator.validate(payment, VirtualAccountPaymentGroup.class);
+    violations.forEach(violation -> {
+        // membuat context untuk MessageInterpolator
+        MessageInterpolatorContext messageInterpolatorContext = new MessageInterpolatorContext(
+            violation.getConstraintDescriptor(), violation.getInvalidValue(), violation.getRootBeanClass(),
+            violation.getPropertyPath(), violation.getConstraintDescriptor().getAttributes(),
+            violation.getConstraintDescriptor().getAttributes(), ExpressionLanguageFeatureLevel.VARIABLES,
+            true);
+    String message = this.messageInterpolator.interpolate(violation.getMessageTemplate(), messageInterpolatorContext, Locale.of("id", "ID"));
+    System.out.println(message);
+    }); 
+}
+```
