@@ -9,6 +9,7 @@ import com.validation.groups.VirtualAccountPaymentGroup;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.groups.ConvertGroup;
 import jakarta.validation.groups.Default;
 
@@ -21,10 +22,11 @@ public class Payment {
      * kasus ini adalah  VirtualAccountPaymentGroup dan
      * CreditCardPaymentGroup
      */
-    @NotBlank(message = "order id can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     private String orderId;
 
-    @Range(min = 10_000L, max = 100_000_000, message = "amount can't les than 10.000 and can't more than 100.000.000", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @Range(min = 10_000L, max = 100_000_000, message = "{order.amount.range}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     @NotNull(message = "amount can't be blank", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     private Long amount;
 
