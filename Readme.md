@@ -1083,3 +1083,62 @@ public void testMessageInternationalizationInterpolator() {
     }); 
 }
 ```
+
+# Custom Constrain 
+Sampai saat ini, kita baru bempelajari Constrain Build-in yang terdapat pada Bean validation dan Hibernate Valdator.
+Kita bisa membuat Constrain, artinya kita bisa membuat Custom Constrain.
+Untuk mebuat constrain, kita harus mengikuti aturan dalalam membuat constrain yaitu :
+- membuat constrain annotation
+- membuat constrain validator
+
+# Check Case Constrain
+Misal sekarang kita akan membuat sebuah constrain validation yang digunakan untuk melakukan pengecekan case sebuah string.
+Agar dinamis, kita akan tambahkan method mode() pada constrain yang akan kita buat, yang fungsinya untuk menentukan karakter harus uppercase atau lowercase.
+
+Tahap pertama untuk membuat nya adalah, kita harus membuat emum class untuk membuat tipe data nya lowercase atau uppercase.
+``` java
+public enum CaseMode {
+    UPPERCASE, LOWERCASE
+}
+```
+setelah itu kita harus membuat annotasi constrain nya
+``` java
+@Documented
+/**
+ * ini untuk menentukan target dari annotasi 
+ * ini field, atau method, dan lain lain
+ */
+@Target(ElementType.FIELD)
+/**
+ * ini untuk menentukan annotasi ini 
+ * di eksekusi nya kapan, saat Runtime
+ * atau yang lainya
+ */
+@Retention(RetentionPolicy.RUNTIME)
+/**
+ * ini untuk menentukan class mana
+ * yang akan memvalidasi annotasi ini, simpelnya
+ * adalah class yang akan menyimpan logic dari
+ * annotasi ini
+ */
+@Constraint(validatedBy = {CheckCaseValidator.class})
+public @interface CheckCase {
+    
+    /**
+     * ini untuk mengambil setingan yang akan diberikan nanti
+     * apakah tipenya CaseMode.UPPERCASE, atau CaseMode.LOWERCASE
+     *  */ 
+    CaseMode mode();
+
+    /**
+     * ini untuk message error nya
+     * @return
+     */
+    String message() default "valu is invalid";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+}
+```
+
