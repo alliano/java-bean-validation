@@ -1006,6 +1006,13 @@ contoh :
 order.id.notblank = order id can't be blank
 order.id.size = order id can't less than {min} and can't more than {max}
 order.amount.range = amout can't less than {min} and can't more than {max}
+payment.amount.notblank = amount can't be blank
+payment.creaditcard.invalid = invalid credit card
+payment.creaditcard.notblank = credit card can't be blank
+payment.virtualaccount.notblank = virtual account can't be blank
+payment.customer.notnull = customer can't be null
+orderid.uppercase.invalid = order id must be uppercase
+orderid.lowercase.invalid = order id must be lowercase
 ```
 
 cara penggunaanya cukup simpel, kita hanya meuliskan key yang ada didalam propertiesnya didalam method message pada constrain.
@@ -1030,6 +1037,13 @@ Misalnya kita punya Resorce bundle dengan ValidationMessages_id_ID.properties un
 order.id.notblank = order id tidak boleh kosong
 order.id.size = order id tidak boleh kurang dari {min} karakter dan tidak boleh lebih dari {max} karakter
 order.amount.range = jumlah tidakboleh kurang dari {min} dan tidak boleh lebih dari {max}   
+payment.amount.notblank = jumlah nga boleh kosong
+payment.creaditcard.invalid = kartu keredit tidak valid
+payment.creaditcard.notblank = kartu kredit tidak boleh kosong
+payment.virtualaccount.notblank = virtual account tidak boleh kosong
+payment.customer.notnull = customer tidak boleh null
+orderid.uppercase.invalid = order id harus menggunakan hurf kapital
+orderid.lowercase.invalid = order id harus menggunakan huruf kecil 
 ```
 setelah itu untuk mengubah bahsa message yang akan di tampilkan sebagai berikut :
 ``` java
