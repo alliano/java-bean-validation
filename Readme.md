@@ -1141,4 +1141,63 @@ public @interface CheckCase {
     Class<? extends Payload>[] payload() default {};
 }
 ```
+setelah itu kita membuat logic dari constrain yang kita buat dengan meng implementasi interface ConstraintValidator<<A extend T>>
+``` java
+public class CheckCaseValidator implements ConstraintValidator<CheckCase, String> {
+
+    private CaseMode caseMode;
+    
+    /**
+     * method ini digunakan untuk mengambil pilihan case nya
+     * CaseMode.UPPERCASE atau CaseMode.LOWERCASE
+     */
+    @Override
+    public void initialize(CheckCase constraintAnnotation) {
+        this.caseMode = constraintAnnotation.mode();
+    }
+
+    /**
+     * method ini digunakan untuk mengecek apakah 
+     * data yang di inputkan valid atau nga
+     */
+    @Override
+    public boolean isValid(String arg0, ConstraintValidatorContext arg1) {
+        if(arg0 == null) return false;
+
+        if(this.caseMode == CaseMode.UPPERCASE) {
+            return arg0.equals(arg0.toUpperCase());
+        }
+        else if(this.caseMode == CaseMode.LOWERCASE) {
+            return arg0.equals(arg0.toLowerCase());
+        }
+        return false;
+    }
+}
+```
+
+setelah itu kita bisa gunakan annotasi yang telah kita buat di level property atau field
+``` java
+@CheckCase(mode = CaseMode.UPPERCASE, message = "{order.id.uppercase}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private String orderId;
+```
+setelah itu kita bisa coba constrain yang telah kita buat tersebut denga unit test
+``` java
+public class CustomConstrainTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testCustomConstrainSccess() {
+        Payment payment = new Payment("OOPSD112", 600_000_000L, "42222222222222", "0092", null);
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class);
+    }
+
+    @Test
+    public void testCustomConstrainFaill() {
+        Payment payment = new Payment("oopsd112", 600_000_000L, "42222222222222", "0092", null);
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class);
+    }
+}
+```
+
 
