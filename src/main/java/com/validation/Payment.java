@@ -3,15 +3,13 @@ package com.validation;
 import org.hibernate.validator.constraints.LuhnCheck;
 import org.hibernate.validator.constraints.Range;
 
-import com.validation.constrains.CheckCase;
-import com.validation.enums.CaseMode;
+import com.validation.constrains.CheckOrderId;
 import com.validation.groups.CreditCardPaymentGroup;
 import com.validation.groups.VirtualAccountPaymentGroup;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.groups.ConvertGroup;
 import jakarta.validation.groups.Default;
 
@@ -24,9 +22,7 @@ public class Payment {
      * kasus ini adalah  VirtualAccountPaymentGroup dan
      * CreditCardPaymentGroup
      */
-    @CheckCase(mode = CaseMode.UPPERCASE, message = "{orderid.uppercase.invalid}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
-    @NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
-    @Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+    @CheckOrderId(groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     private String orderId;
 
     @Range(min = 10_000L, max = 100_000_000, message = "{order.amount.range}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
