@@ -3,6 +3,8 @@ package com.validation;
 import org.hibernate.validator.constraints.LuhnCheck;
 import org.hibernate.validator.constraints.Range;
 
+import com.validation.constrains.CheckCase;
+import com.validation.enums.CaseMode;
 import com.validation.groups.CreditCardPaymentGroup;
 import com.validation.groups.VirtualAccountPaymentGroup;
 
@@ -22,6 +24,7 @@ public class Payment {
      * kasus ini adalah  VirtualAccountPaymentGroup dan
      * CreditCardPaymentGroup
      */
+    @CheckCase(mode = CaseMode.UPPERCASE, message = "{orderid.uppercase.invalid}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     @NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     @Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
     private String orderId;
