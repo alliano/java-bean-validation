@@ -9,11 +9,19 @@ public class CheckCaseValidator implements ConstraintValidator<CheckCase, String
 
     private CaseMode caseMode;
     
+    /**
+     * method ini digunakan untuk mengambil pilihan case nya
+     * CaseMode.UPPERCASE atau CaseMode.LOWERCASE
+     */
     @Override
     public void initialize(CheckCase constraintAnnotation) {
         this.caseMode = constraintAnnotation.mode();
     }
 
+    /**
+     * method ini digunakan untuk mengecek apakah 
+     * data yang di inputkan valid atau nga
+     */
     @Override
     public boolean isValid(String arg0, ConstraintValidatorContext arg1) {
         if(arg0 == null) return false;
@@ -26,5 +34,4 @@ public class CheckCaseValidator implements ConstraintValidator<CheckCase, String
         }
         return false;
     }
-    
 }
