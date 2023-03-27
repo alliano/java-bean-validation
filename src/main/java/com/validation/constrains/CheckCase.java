@@ -16,7 +16,7 @@ import jakarta.validation.Payload;
  * ini untuk menentukan target dari annotasi 
  * ini field, atau method, dan lain lain
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 /**
  * ini untuk menentukan annotasi ini 
  * di eksekusi nya kapan, saat Runtime
