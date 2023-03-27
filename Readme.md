@@ -1162,6 +1162,7 @@ public class CheckCaseValidator implements ConstraintValidator<CheckCase, String
      */
     @Override
     public boolean isValid(String arg0, ConstraintValidatorContext arg1) {
+        // disini kita abaikan kalo datanya null
         if(arg0 == null) return false;
 
         if(this.caseMode == CaseMode.UPPERCASE) {
@@ -1196,6 +1197,164 @@ public class CustomConstrainTest extends AbstracValidatorTest {
     public void testCustomConstrainFaill() {
         Payment payment = new Payment("oopsd112", 600_000_000L, "42222222222222", "0092", null);
         validateWithGroups(payment, VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class);
+    }
+}
+```
+# Constrain Composition
+Jika kita perhatikan pada filed orderId pada class Payment itu terdapat 3 constrain annotation, @Size, @NotBlank, dan @CheckCase. Bahakan pada sekenario tertentu, bisa jadi akan banyak sekali constrain annotation pada suatu field, dan semakin lama kodenya akan semakin tidak rapih dan membingungkan.
+Bean Validation mendukung Constrain Composition, yang mna kita bisa membuat constrain baru yang didalamnya adalah kumpulan dari beberapa constrain.
+Cara membuatnya, kita harus membuat annotation constrain baru lalu kita tambahkan constrain-constrain yang akan di pakai dalam suatu field.
+
+conotoh :
+
+kita buat annotation nya terlebih dahulu dan kita tambahkan beberapa anotasi lainya
+``` java
+@CheckCase(mode = CaseMode.UPPERCASE, message = "{orderid.uppercase.invalid}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+@Documented @Constraint(validatedBy = {})
+public @interface CheckOrderId {
+    
+    String message() default "invalid value";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+}
+```
+setelah kita membuat constrain compisition nya, filed orderId yang sebelumnya seperti ini
+``` java
+@CheckCase(mode = CaseMode.UPPERCASE, message = "{orderid.uppercase.invalid }", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@NotBlank(message = "{order.id.notblank}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@Size(max = 10, min = 1, message = "{order.id.size}", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private String orderId;
+```
+
+kita bisa ubah menjadi seperti ini, semua constrain nya kita pindahkan di annotasi @CheckOrderId
+```java
+@CheckOrderId(groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+private String orderId;
+```
+
+setelah itu kita bisa test apalah annotasi komposisi nya bekerja apa nga
+``` java
+public class ConstrainCompositionTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testConstrainComposition() {
+        Payment payment = new Payment(null, null, null, null, null);
+        validateWithGroups(payment, VirtualAccountPaymentGroup.class);
+    }
+}
+```
+
+# Class-Level Constrain
+Sebelumnya kita hanya membuat Constrain pada Field, Mehod, dan Constructor.
+Constrain bisa kita tambahkan pada level Class.
+Hal ini sangat membantu dalam study case tertentu, misalnya kita ingin membandingkan lebih dari satu field dan sebagainya.
+Untuk membuat Class-Level-Constrain, kita cukup tambahkan Annotation Constrain pada Class, dan pastikan saat membuat constrainya tambahkan targetnya Class.
+
+contoh :  
+
+petama tama kita buat terlebih dahulu annotasi dengan level class
+``` java
+@Documented
+@Constraint(validatedBy = {CheckPasswordValidator.class})
+/**
+ * untuk menjadikan annotasi ini bisa digunakan di level class
+ * kita harus tambahkan ElementType.TYPE
+ */
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CheckPassword {
+    
+    public String message() default "retrype password must be same with password";
+
+    public Class<?>[] groups() default {};
+
+    public Class<? extends Payload>[] payload() default {};
+}
+```
+setelah itu kita buat class yang menampung logic dari annotasi ini
+``` java
+public class CheckPasswordValidator implements ConstraintValidator<CheckPassword, Register> {
+
+    @Override
+    public boolean isValid(Register register, ConstraintValidatorContext arg1) { 
+        // kalo datanya kosong diabaikan biar annotasi @NotBlank yang handle
+        if(register == null || register.getRetypePassword() == null) return true;
+        if(register.getPassword().equals(register.getRetypePassword())) return true;
+        else
+        return false;
+    }   
+}
+```
+
+setelah itu kita bisa gunakan annotasi yang baru kita buat tesebut pada level class
+``` java
+@CheckPassword(message = "password and retype password must be same")
+public class Register {
+    
+    @NotBlank(message = "username is required")
+    private String username;
+
+    @NotBlank(message = "password is required")
+    private String password;
+
+    @NotBlank(message = "retype password is required")
+    private String retypePassword;
+
+    public Register(
+            @NotBlank(message = "username is required") String username,
+            @NotBlank(message = "password is required") String password,
+            @NotBlank(message = "retype password is required") String retypePassword) {
+        this.username = username;
+        this.password = password;
+        this.retypePassword = retypePassword;
+    }
+    public Register() {
+    
+    }
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRetypePassword() {
+        return retypePassword;
+    }
+
+    public void setRetypePassword(String retypePassword) {
+        this.retypePassword = retypePassword;
+    }
+    @Override
+    public String toString() {
+        return "Register [username=" + username + ", password=" + password + ", retypePassword=" + retypePassword + "]";
+    }
+}
+```
+
+setelah itu kita bisa menetestnya 
+``` java
+public class ClassLevelValidationTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testClassLevelValidation() {
+        Register register = new Register("Alliano", "uchica", "uchiha123");
+        this.validate(register);
     }
 }
 ```
