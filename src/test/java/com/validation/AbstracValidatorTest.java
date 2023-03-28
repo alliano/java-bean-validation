@@ -5,6 +5,8 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.validation.extractor.DataExtractor;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.MessageInterpolator;
 import jakarta.validation.Validation;
@@ -24,7 +26,9 @@ public abstract class AbstracValidatorTest {
 
     @BeforeEach
     public void setUp() {
-        this.validatorFactory = Validation.buildDefaultValidatorFactory();
+        this.validatorFactory = Validation.byDefaultProvider()
+                                .configure().addValueExtractor(new DataExtractor())
+                                .buildValidatorFactory();
         this.validator = this.validatorFactory.getValidator();
         this.executableValidator = validator.forExecutables();
         this.messageInterpolator = this.validatorFactory.getMessageInterpolator();

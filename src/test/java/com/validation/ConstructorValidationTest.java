@@ -33,7 +33,7 @@ public class ConstructorValidationTest extends AbstracValidatorTest {
 
     @Test
     public void testConstructorValidatorReturnValue() throws NoSuchMethodException, SecurityException {
-        Person person = new Person("", "", new Address());
+        Person person = new Person(null, null, null, null);
         Constructor<Person> constructor = Person.class.getConstructor(String.class, String.class, Address.class);
         Set<ConstraintViolation<Person>> violations = executableValidator.validateConstructorReturnValue(constructor, person);
         violations.forEach(violation -> {

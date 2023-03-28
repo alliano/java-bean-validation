@@ -1373,5 +1373,269 @@ public class ClassLevelValidationTest extends AbstracValidatorTest {
 }
 ```
 
+# Cross-Paramter Constrain
+Untuk melakukan validasi beberapa field, kita bisa menggunakan constrain annotation pada class level.
+Namun bagaimana jikalau kita ingin memvalidasi beberapa parameter (dua parameter harus sama) ?
+Hal tersebut tidak bisa dilakukan dengan menggunakan constrain annotation pada class level, namun ada cara tersendiri unruk melakukan hal tersebut.
+Yaitu dengan menggunakan annotation @SupportedAnnotationTarget.
+@SupportedAnnotationTarget digunakan pada Class implementasi dari ConstrainValidator<<A extends T>> untuk melakukan validasi semua paramter pada mehtod ataupun constructor.
+
+Contoh misalnya kita memiliki class UserService dan class tersebut memiliki method register
+``` java
+public class UserService {
+    
+    public void register(
+        @NotBlank(message = "username is required") String username,
+        @NotBlank(message = "password is required") String password,
+        @NotBlank(message = "retype password is required") String retypePassword) {
+            // Logic register
+    }
+}
+```
+dan kita ingin memvalidasi paramter password dan retypePassword harus sama, maka terlebih dahulu kita membuat Constrain annotation
+``` java
+@Documented
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = {CheckPasswordParameterValidator.class})
+public @interface CheckPasswordParameter {
+    
+    public int passwordParam();
+
+    public int retypePasswordParam();
+
+    public String message() default "password and retype password must be same";
+    
+    public Class<?>[] groups() default {};
+
+    public Class<? extends Payload>[] payload() default {};
+}
+```
+setelah itu kita harus membuat class impelemtasi dari ConstrainValidator<<A extends T>> dengan menambahkan annotasi @SupportedValidationTarget(value = {ValidationTarget.PARAMETERS}) pada level class nya.
+``` java 
+@SupportedValidationTarget(value = {ValidationTarget.PARAMETERS})
+public class CheckPasswordParameterValidator implements ConstraintValidator<CheckPasswordParameter, Object[]> {
+
+    private int password;
+
+    private int retypePassword;
+    
+    @Override
+    public void initialize(CheckPasswordParameter constraintAnnotation) {
+        this.password = constraintAnnotation.passwordParam();
+        this.retypePassword = constraintAnnotation.retypePasswordParam();
+    }
+
+    @Override
+    public boolean isValid(Object[] arg0, ConstraintValidatorContext arg1) {
+        var password = arg0[this.password];
+        var retypePassword = arg0[this.retypePassword];
+        // jika password dan retypaswornya null skipp validation biarin aja @NotBlank yang handle
+        if(password == null || retypePassword == null) return true;
+        /**
+         * jikak password dan retype password nya sama maka akan mereturn true jika tidak sama 
+         * akan meretrun false
+         */
+        return retypePassword.equals(password);
+    }
+}
+```
+setelah itu kita bisa gunakan annotasi yang kita buat tersebut pada method register yang ada pada class UsernameService.
+``` java
+public class UserService {
+    
+    @CheckPasswordParameter(passwordParam = 1, retypePasswordParam = 2)
+    public void register(
+        @NotBlank(message = "username is required") String username,
+        @NotBlank(message = "password is required") String password,
+        @NotBlank(message = "retype password is required") String retypePassword) {
+
+            // Logic register
+    }
+}
+```
+
+# ConstrainValidatorContext
+Saat kita membuat class impelment ConstrainValidator<<A extends T>>, pada method isValid terdapat parameter ConstrainValidatorContext.
+ConstrainValidatorContesxt digunakan untuk membuat custom message.
+Contohnya pada class level constrain ketika terjadi error, maka secara defaul path error nya adalah object root nya, terkadang kita ingin memberitau properti atau field mana yang error. Pada kasus sepeperti ini kita busa menggunakan ConstrainValidatorConstext.
+
+contoh : 
+
+``` java
+@Override
+public boolean isValid(Register register, ConstraintValidatorContext constraintValidatorContext) { 
+    // kalo datanya kosong diabaikan biar annotasi @NotBlank yang handle
+    if(register == null || register.getRetypePassword() == null) return true;
+
+    boolean isValid = register.getPassword().equals(register.getRetypePassword());
+    if(!isValid) {
+        // ini untuk dissable atau menonaktifkan message default nya
+        constraintValidatorContext.disableDefaultConstraintViolation();
+        // ini unutk meng custom message default nya
+        constraintValidatorContext.buildConstraintViolationWithTemplate("password is different with retype password")
+        .addPropertyNode("password")
+        .addConstraintViolation();
+    }
+    return isValid;
+}
+```
+
+# ConstrainDescriptor
+ConstrainDescriptor merupakan interface yang berisikan tentang informasi constrain.
+Kita bisa mendaparkan informasi seperti Annotation, Group, Validation Class, Messagge Template, bahkan annotation method menggunakan ConstrainDescriptor.
+
+reference : [constrain descriptor](https://jakarta.ee/specifications/bean-validation/3.0/apidocs/?jakarta/validation/metadata/ConstraintDescriptor.html)
+
+contoh :
+
+``` java
+public class ConstrainDescriptorTest extends AbstracValidatorTest {
+    
+    @Test
+    public void tesDescriptor() {
+        Person person = new Person();
+        Set<ConstraintViolation<Person>> violations = this.validator.validate(person);
+        violations.forEach(violation -> {
+            ConstraintDescriptor<?> constraintDescriptor = violation.getConstraintDescriptor();
+            System.out.println("message template : "+constraintDescriptor.getMessageTemplate());
+            System.out.println("annotation : "+constraintDescriptor.getAnnotation());
+            System.out.println("payload : "+constraintDescriptor.getPayload());
+            // dan masih banyak lagi informasi yang bisa kita dapatkan
+        });
+    }
+}
+```
+
+# Container Data
+Saat kita menbuat class, kadang kita sering menggunakan tipe data container, misalnya Optional, Colection, List, Set, Map dan lain lain.
+Secara default, jika kita isi data tersebut dengan data Object misal  @Valid List<<Addredss>> maka secara otomatis bean validation akan melakukan validasi pada semua propery yang ada pada object Address.
+Tapi bagaimana jikalau kita memiliki Field/property seperti List<<String>> atau Map<<String, String>> bagaimana cara kita memvalidasi nya ?
+Misal kita ingin semua data String nya ga boleh kosong.
+Untungnya, Bean validation mendukung validasi terhadap container seperti ini.
+
+contoh code validasi data container yang salah:
+``` java
+// jika seperti ini data tidak akan pernah di validasi
+@Valid @NotBlank(message = "hobbie is required")
+private java.util.List<String> hobbies;
+```
+Untuk melakukan validasi pada jenis data Container, Bean validation membutuhkan ValueExecutor.
+ValueExecutor membantu Bean Validation untuk melakukan extraksi data pada container.
+Secara default, Bean Validation Mendukung semua data jenis Container yang tersedia pada Java, Seperti Optional, Collection, List, Iterable, Set, dan Map.
+Yang kita butuhka hanya dengan menambajkan annotasi pada generic type nya.
+``` java
+private java.util.List<@NotBlank(message = "hobbie is required") String> hobbies;
+```
+
+untu test nya
+``` java
+public class DataContainerTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testDataContainer() {
+        Person person = new Person();
+        person.setHobbies(new ArrayList<String>());
+        person.getHobbies().add(" ");
+        person.getHobbies().add(" ");
+        person.getHobbies().add(" ");
+        person.getHobbies().add(" ");
+        person.getHobbies().add(" ");
+        person.getHobbies().add("Climbing");
+        person.setFirstName("alliano");
+        person.setLastNmae("Uchiha");
+        person.setAddress(new Address("adasd", "asdasdasd", "asddasdasd"));
+        validate(person);
+    }
+}
+```
+
+# Value Extractor
+Value Extractor adalah proses melakukan extraksi nilai dasi data jenis container (kumpulan data), sehingga nilai-nilai nya bisa di validasi.
+Sebelumnya kita sudah mengetahui bahwa bean validation mendukung value extraction untuk tipe data container di java.
+Namun bagai mana jikalau kita menggunakan data container sendiri atau misalnya kita menggunakan tipe data container milik liberaly bukan bawaan dai bahasa pemograman java, misal seperti apache common collection, atau google guava. Maka bean validation tidak bisa melakukan ektraksi nilai yang terdapat pada data container tersebut, maka kita perlu meng exktrak data container tersebut secara manual.
+Cara unutk memberitau Bean Validation melakukan ektraksi pada tipe data container adalah dengan cara membuat Value Extraktor sendiri.
+
+reference : [value extractor](https://docs.oracle.com/middleware/12213/coherence/java-reference/com/tangosol/util/ValueExtractor.html)
+
+contoh misalnya kita memiliki data container sendiri
+``` java
+public class Data<T> {
+    
+    private T data;
+
+    public T getData() {
+        return this.data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+}
+```
+Setelah itu agar bean validation bisa memvalidasi tipe data yang barusaja kita buat tersebut, kita perlu membuat value Extractor secara manual dengan mengimplementasi kan interface ValueExtractior<T<<@ExtractValue ?>>>
+``` java
+public class DataExtractor implements ValueExtractor<Data<@ExtractedValue ?>> {
+
+    @Override
+    public void extractValues(Data<@ExtractedValue ?> originalValue, ValueReceiver recive) {
+        Object data = originalValue.getData();
+        /**
+         * cara untuk meng ekstrak datanya, dengan menggunakan ValueReciver dengan menthod value
+         * dan paameter pertaman adalah nama node nya dan parameter ke 2 adalah data nya
+         * disini unutk node name nya kita isi null karena tipe data yang kita buat bukan nested
+         * object melainkan data biasa
+         */
+        recive.value(null, data);
+    }
+}
+```
+setelah itu baru kita bisa memvalidasi terhadap data container yang bukan bawaan dari bahasa pemograman java
+``` java
+public class SampleData {
+
+    @NotNull(message = "data is required")
+    private Data<@NotBlank(message = "data cant be blank") @Size(max = 5,message = "data can't more than 5 characters") String> data;
+
+    public Data<String> getData() {
+        return data;
+    }
+
+    public void setData(Data<String> data) {
+        this.data = data;
+    }
+}
+```
+
+setelah itu untuk melakukan validasi nya kita harus meregistrasikan terlebih dahulu value extractor yang kita buat tadi melalui Object Validation agar bean validation tau cara meng exstrac data container nya seperti apa.
+Disini kita akan meregistrasikan nya melalui method setUp() pada class AbstracValidatorTest karna di kelas tersebutlah yang kita buat unutk bertanggungjawab atas pembuatan object bean validation.
+``` java
+@BeforeEach
+public void setUp() {
+    // meregistrasikan DataExtractory yaang kita buat
+    this.validatorFactory = Validation.byDefaultProvider()
+                            .configure().addValueExtractor(new DataExtractor())
+                            .buildValidatorFactory();
+    this.validator = this.validatorFactory.getValidator();
+    this.executableValidator = validator.forExecutables();
+    this.messageInterpolator = this.validatorFactory.getMessageInterpolator();
+}
+```
+setelah itu kita bisa coba validasinya dengan unit test
+``` java
+public class ValueExtractorTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testValueExtractor() {
+      SampleData sampleData = new SampleData();
+      sampleData.setData(new Data<String>());
+      sampleData.getData().setData("h");
+      sampleData.getData().setData("                      ");
+      validate(sampleData);
+    }
+}
+```
+
+
 
 

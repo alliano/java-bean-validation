@@ -1,5 +1,7 @@
 package com.validation;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +28,8 @@ public class Person {
     @Valid
     private Address address;
 
+    private java.util.List<@NotBlank(message = "hobbie is required") String> hobbies;
+
     /**
      * disini kita annotasi dengan annotasi constrain semua parameternya
      * agar nanti di validasi oleh bean validation
@@ -33,14 +37,18 @@ public class Person {
      * @param lastNmae
      * @param address
      */
+
     public Person(
             @NotBlank(message = "nama depan gaboleh kosonk") @Size(max = 20, message = "nama depan gaboleh lebih dari 20 karakter") String firstName,
             @NotBlank(message = "nama blakang gaboleh kosonk") @Size(max = 20, message = "nama blakang gaboleh lebih dari 20 karakter") String lastNmae,
-            @NotNull(message = "allamat gaboleh kosonk") @Valid Address address) {
+            @NotNull(message = "allamat gaboleh kosonk") @Valid Address address,
+            List<@NotBlank(message = "hobbie is required") String> hobbies) {
         this.firstName = firstName;
         this.lastNmae = lastNmae;
         this.address = address;
+        this.hobbies = hobbies;
     }
+
 
     @Valid
     public Person() {}
@@ -83,5 +91,13 @@ public class Person {
 
     public void setAddress(Address address) {
         this.address = address;
+    }
+
+    public java.util.List<String> getHobbies() {
+        return hobbies;
+    }
+
+    public void setHobbies(java.util.List<String> hobbies) {
+        this.hobbies = hobbies;
     }
 }
