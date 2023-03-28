@@ -6,6 +6,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.validation.extractor.DataExtractor;
+import com.validation.extractor.EntryKeyExtractor;
+import com.validation.extractor.EntryValueExtractor;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.MessageInterpolator;
@@ -28,6 +30,8 @@ public abstract class AbstracValidatorTest {
     public void setUp() {
         this.validatorFactory = Validation.byDefaultProvider()
                                 .configure().addValueExtractor(new DataExtractor())
+                                .addValueExtractor(new EntryKeyExtractor())
+                                .addValueExtractor(new EntryValueExtractor())
                                 .buildValidatorFactory();
         this.validator = this.validatorFactory.getValidator();
         this.executableValidator = validator.forExecutables();
