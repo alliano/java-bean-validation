@@ -1636,6 +1636,87 @@ public class ValueExtractorTest extends AbstracValidatorTest {
 }
 ```
 
+# Multiple Generic Parameter Type
+Secara default, saat kita membuat value extractor, annotasi @ExtractedValue hanya bisa digunakan oleh 1 method saja.
+Oleh karna itu, jika kita membuat container class generic yang menggunakan lebih dari 1 generic parameter type, maka kita harus membuat valueExtractor nya sebanyak jumlah generic paramter type nya.
 
+contoh nya kita memiliki tipedata Entry<<K, V>> yang memiliki dua parameter generic Type
+``` java
 
+public class Entry<K, V> {    
 
+    private K key;
+
+    private V value;
+
+    public K getKey() {
+        return key;
+    }
+
+    public void setKey(K key) {
+        this.key = key;
+    }
+
+    public V getValue() {
+        return value;
+    }
+
+    public void setValue(V value) {
+        this.value = value;
+    }
+}
+```
+maka kita harus membuat dua valie extractor unuk kedua parameter generic tersebuat(parameter key dan value)   
+
+key extractor
+``` java
+/**
+ * disini kita meletakan @ExtractedValue pada
+ * paramter pertama generic type pada Entry class
+ * karena parameter generic pertama pada Entry class adalah
+ * Key, dan kita inigin memberitahu cara extract key nya
+ */
+public class EntryKeyExtractor implements ValueExtractor<Entry<@ExtractedValue ?, ?>>{
+
+    @Override
+    public void extractValues(Entry<@ExtractedValue ?, ?> originalValuEntry, ValueReceiver receiver) {
+        receiver.keyedValue(null, "key", originalValuEntry.getKey());
+    }
+}
+```
+value extracor
+``` java
+
+/**
+ * disini kita meletakan @ExtractedValue pada
+ * paramter kedua generic type pada Entry class
+ * karena parameter generic kedua pada Entry class adalah
+ * Value, dan kita inigin memberitahu cara extract Value nya
+ */
+public class EntryValueExtractor implements ValueExtractor<Entry<?, @ExtractedValue ?>> {
+
+    @Override
+    public void extractValues(Entry<?, @ExtractedValue ?> originalValueEntry, ValueReceiver receiver) {
+        receiver.keyedValue(null, "value", originalValueEntry.getValue());
+    }
+}
+```
+Setelah itu kita bisa meregistrasikan kedua Extractor tersebut
+``` java
+this.validatorFactory = Validation.byDefaultProvider()
+                        .configure()
+                        .addValueExtractor(new EntryKeyExtractor())
+                        .addValueExtractor(new EntryValueExtractor())
+                        .buildValidatorFactory();
+```
+setelah itu kita bisa tes
+``` java
+@Test
+public void testMultipleGenericType(){
+    SampleEntry sampleEntry = new SampleEntry();
+    sampleEntry.setEntryData(new Entry<String, String>());
+    sampleEntry.getEntryData().setKey(" ");
+    sampleEntry.getEntryData().setValue(" ");
+    validate(sampleEntry);
+}
+```
