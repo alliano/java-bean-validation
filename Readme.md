@@ -64,29 +64,29 @@ dan untunk membuat object Validator nya kita bisa menggunakan method getValidato
 
 contoh : 
 ``` java
-	@Test
-	public void testValidator() {
-		/**
-		 * method buildDefaultValidatorFactory() ini akan mendeteksi project kita daa mencari implementasi,
-		 * atau libelary implementasi dari Bean Validation nya
-		 * jikalau gaada maka akan gagal membuat object ValidatorFactory.
-		 * dan akan terjadi exception dengan tipe NotProvideFoundException.
-         * 
-		 * sekarang ini kita menggunakan hibernate validator untuk implementasi
-		 * dari Bean Validation nya, nanti jikalau kita ingin menggunakan liberary lain
-		 * untuk impelemntasi dari Bean Validation nya itu bisa saja, asal penting 
-		 * saat kita mau menggunakan Bean Validation kita harus menambahkan Implementasi dari
-		 * Bean Validation nya.
-		 */
-		ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+@Test
+public void testValidator() {
+	/**
+	 * method buildDefaultValidatorFactory() ini akan mendeteksi project kita daa mencari implementasi,
+	 * atau libelary implementasi dari Bean Validation nya
+	 * jikalau gaada maka akan gagal membuat object ValidatorFactory.
+	 * dan akan terjadi exception dengan tipe NotProvideFoundException.
+     * 
+	 * sekarang ini kita menggunakan hibernate validator untuk implementasi
+	 * dari Bean Validation nya, nanti jikalau kita ingin menggunakan liberary lain
+	 * untuk impelemntasi dari Bean Validation nya itu bisa saja, asal penting 
+	 * saat kita mau menggunakan Bean Validation kita harus menambahkan Implementasi dari
+	 * Bean Validation nya.
+	 */
+	ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
 
-		// membuat object Validation
-		Validator validator = validatorFactory.getValidator();
+	// membuat object Validation
+	Validator validator = validatorFactory.getValidator();
 
-		Assertions.assertNotNull(validator);
+	Assertions.assertNotNull(validator);
 
-        validatorFactory.close();
-	}
+    validatorFactory.close();
+}
 ```
 # Manual Validation
 Sebelum menggunakan Bean Validation, untuk melakukan validasi di java, biasanya dilakukan secara manual.
@@ -194,23 +194,23 @@ public class ConstrainViolationTest {
 # Obejct Metadata
 Pada ConstrtainViolation, tidak hanya error message yang bisa kita lihat, kita juga bisa melihat field manaya yang error dan object mana yang error dan lain-lain.
 ``` java
-    @Test
-    public void testObjectMetadata() {
-        Person person = new Person();
-        Set<ConstraintViolation<Person>> constrainViolations = this.validator.validate(person);
-       for (ConstraintViolation<Person> constrainViolation : constrainViolations) {
-            // untuk mendapatkan persan error
-            System.out.println("Message : "+constrainViolation.getMessage());
-            // untuk mendapatkan object yang di validasi
-            System.out.println("Bean : "+constrainViolation.getLeafBean());
-            // untuk mendapatkan annotasi yang menyebabkan error
-            System.out.println("Constrain : "+constrainViolation.getConstraintDescriptor().getAnnotation());
-            // untuk mendapatkan nilai yang tidak valid
-            System.out.println("Invalid value : "+constrainViolation.getInvalidValue());
-            // untuk mendapatkan field yang terjadi error validasi
-            System.out.println("Path : "+constrainViolation.getPropertyPath());
-       }
+@Test
+public void testObjectMetadata() {
+    Person person = new Person();
+    Set<ConstraintViolation<Person>> constrainViolations = this.validator.validate(person);
+    for (ConstraintViolation<Person> constrainViolation : constrainViolations) {
+         // untuk mendapatkan persan error
+        System.out.println("Message : "+constrainViolation.getMessage());
+         // untuk mendapatkan object yang di validasi
+        System.out.println("Bean : "+constrainViolation.getLeafBean());
+        // untuk mendapatkan annotasi yang menyebabkan error
+        System.out.println("Constrain : "+constrainViolation.getConstraintDescriptor().getAnnotation());
+        // untuk mendapatkan nilai yang tidak valid
+        System.out.println("Invalid value : "+constrainViolation.getInvalidValue());
+         // untuk mendapatkan field yang terjadi error validasi
+         System.out.println("Path : "+constrainViolation.getPropertyPath());
     }
+}
 ```
 
 # Nested Validation
@@ -336,11 +336,6 @@ public class Person {
 ```
 Setelah field Addres di annotasi dengan @Valid maka field Address tersebut akan di validasi
 ```java
-
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-
 public class NestedValidationTest {
     
     private Validator validator;
@@ -382,12 +377,6 @@ reference : https://docs.jboss.org/hibernate/stable/validator/api/org/hibernate/
 contoh :
 kita memiliki kelas payment yang akan di validasi oleh annotation dari Hibernate Validator
 ``` java
-import org.hibernate.validator.constraints.LuhnCheck;
-import org.hibernate.validator.constraints.Range;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 public class Payment {
     
     @NotBlank(message = "order id gaboleh kosong")
@@ -460,14 +449,6 @@ public class Payment {
 
 kita buat abstrac claass untuk mengatasi kode yang rendudan misalnya seperti pembuatan pembuatan object Validator dan ValidatorFactory pada setiap class unit test, disini kita menggunakan unti test hanya untuk pengetesan saja, pada real study case biasanya nanti kita tidak menggunakan unit test.
 ``` java
-import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
-
 public abstract class AbstracValidatorTest {
     
     protected ValidatorFactory validatorFactory;
@@ -691,22 +672,22 @@ public class Customer {
 ```
 lalu kita embed di class Payment 
 ``` java
-    /**
-     * ini walaupun kita telah meng annotasi @Valid pada filed ini
-     * akan tetapi field ini datanya tidak akan pernah di validasi oleh 
-     * java bean vaidation dikarnakan field ini di flaging/grouping
-     * dengan VirtualAccountPaymentGroup dan CreditCardPaymentGroup
-     * sedangkan field data customer ini kita tidak grouping samasekali
-     * maka field tersebut akan menggunakan flaging/groping Default
-     * 
-     * agar data dari field customer di validasi juga, kita harus mengkonversi 
-     * flaging nya dengan menggunakan annotasi @ConvertGroup
-     */
-    @Valid
-    @NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
-    @ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class)
-    @ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class)
-    private Customer customer;
+/**
+ * ini walaupun kita telah meng annotasi @Valid pada filed ini
+ * akan tetapi field ini datanya tidak akan pernah di validasi oleh 
+ * java bean vaidation dikarnakan field ini di flaging/grouping
+ * dengan VirtualAccountPaymentGroup dan CreditCardPaymentGroup
+ * sedangkan field data customer ini kita tidak grouping samasekali
+ * maka field tersebut akan menggunakan flaging/groping Default
+ * 
+ * agar data dari field customer di validasi juga, kita harus mengkonversi 
+ * flaging nya dengan menggunakan annotasi @ConvertGroup
+ */
+@Valid
+@NotNull(message = "customer can't be null", groups = {VirtualAccountPaymentGroup.class, CreditCardPaymentGroup.class})
+@ConvertGroup(from = VirtualAccountPaymentGroup.class, to = Default.class)
+@ConvertGroup(from = CreditCardPaymentGroup.class, to =  Default.class)
+private Customer customer;
 ```
 lalu kita bisa validasi
 ``` java
@@ -1719,4 +1700,121 @@ public void testMultipleGenericType(){
     sampleEntry.getEntryData().setValue(" ");
     validate(sampleEntry);
 }
+```
+
+# Constrain Non Generic
+Biasanya dalam constrain itu adalah class generic, namun beberapa kasus mungkin ada juga container yang bukan tipe generic.
+Untuk menagani hal ini kita tetap bisa menggunakan @ExtractedValue dan memberitau tipedata dari container nya.
+
+Misal nya kita memiliki Container non generic yang bernama DataInteger
+``` java
+public class DataInteger {
+    
+    private Integer integer;
+
+    public Integer getInteger() {
+        return integer;
+    }
+
+    public void setInteger(Integer integer) {
+        this.integer = integer;
+    }
+}
+```
+setelah itu unutk meng extract value nya kita harus meng annotasi calass impelemtasi dari ValueExtractor dengan annotasi @UnwrapByDefault dan pada generic interface ValueExtractor nya kita beri annotasi @ExtractedValue dan diikuti dengan tipe data yang mau di extract.
+``` java
+@UnwrapByDefault
+public class DataIntegerExtractor implements ValueExtractor<@ExtractedValue(type = Integer.class) DataInteger> {
+
+    @Override
+    public void extractValues(@ExtractedValue(type = Integer.class) DataInteger oroginalValue, ValueReceiver receiver) {
+        receiver.value(null, oroginalValue.getInteger());
+    }
+}
+```
+setelah itu kita harus meregistrasikan DataIntegerExtractor nya
+``` java
+this.validatorFactory = Validation.byDefaultProvider()
+                        .configure()
+                        // registrasikan 
+                        .addValueExtractor(new DataIntegerExtractor())
+                        .buildValidatorFactory();
+```
+setelah itu kita bisa gunakan constrain annotation pada field integer pada class DataInteger.
+``` java
+public class SampleDataInteger {
+    
+    @Min(value = 5, message = "must be greater or equal to 5")
+    private DataInteger dataInteger;
+
+    public DataInteger getDataInteger() {
+        return dataInteger;
+    }
+
+    public void setDataInteger(DataInteger dataInteger) {
+        this.dataInteger = dataInteger;
+    }
+}
+```
+setelah itu kita bisa test value extarctor yang kita buat.
+``` java
+@Test
+public void testDataInteger() {
+    SampleDataInteger sampleDataInteger = new SampleDataInteger();
+    sampleDataInteger.setDataInteger(new DataInteger());
+    sampleDataInteger.getDataInteger().setInteger(6);
+    validate(sampleDataInteger);
+}
+```
+
+# Constrain Validation Exception
+Bean Validation secara defautl tidak memberi exception ketika terjadi validasi error.
+Bean Validation hanya mengembalikan error validasi dalam bentuk Set yang berisi Constrain Violation.
+Beberapa framework ata liberary, mungkin membutuhkan exception jika terjadi validasi error.
+Untuk mengetasi nya kita tidak perlu membuat Exception secara manual, Bean validation telah menyediakan Exception nya yaitu ConstrainViolationException.
+
+reference : [ConstrainViolationException](https://jakarta.ee/specifications/bean-validation/3.0/apidocs/jakarta/validation/constraintviolationexception)
+
+contoh :
+``` java
+public class ConstrainViolationExceptionTest extends AbstracValidatorTest {
+    
+    @Test
+    public void testConstrainViolationException() {
+        Person person = new Person();
+        Set<ConstraintViolation<Person>> violations = this.validator.validate(person);
+        if(!violations.isEmpty()) throw new ConstraintViolationException(violations);
+    }
+}
+```
+# Metadata
+Bean Validation memungkinkan kita untuk melihat detail dari constrain pada suatu class, mirip seperti melihat struktur class menggunakan java refelction.
+Metadata untuk constrain disimpan dalam object BeanDescriptor.
+Untuk melakukanya kita menggunakan method getConstrainsForClass(Class) dari interface Validator.
+
+reference : [BeanDescriptor](https://jakarta.ee/specifications/bean-validation/3.0/apidocs/?jakarta/validation/metadata/BeanDescriptor.html)  
+
+
+contoh :
+``` java
+public class BeanDescriptorTest extends AbstracValidatorTest { 
+    
+    @Test
+    public void testBeanDescriptior() {
+        BeanDescriptor beanDescriptor = this.validator.getConstraintsForClass(Person.class);
+        Set<ConstructorDescriptor> constrainedConstructors = beanDescriptor.getConstrainedConstructors();
+
+        /**
+         * dan masih banyak lagi informasi yang bisa kita dapatkan
+        */
+        constrainedConstructors.forEach(constrain -> {
+            System.out.println(constrain.getName());
+            constrain.getConstraintDescriptors().forEach(d -> {
+                System.out.println(d.getMessageTemplate());
+                System.out.println(d.getAnnotation());
+            });
+        });
+    }
+}
+
 ```
