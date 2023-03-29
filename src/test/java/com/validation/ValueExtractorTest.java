@@ -3,6 +3,7 @@ package com.validation;
 import org.junit.jupiter.api.Test;
 
 import com.validation.containers.Data;
+import com.validation.containers.DataInteger;
 import com.validation.containers.Entry;
 
 public class ValueExtractorTest extends AbstracValidatorTest {
@@ -23,5 +24,13 @@ public class ValueExtractorTest extends AbstracValidatorTest {
         sampleEntry.getEntryData().setKey(" ");
         sampleEntry.getEntryData().setValue(" ");
         validate(sampleEntry);
+    }
+
+    @Test
+    public void testDataInteger() {
+       SampleDataInteger sampleDataInteger = new SampleDataInteger();
+       sampleDataInteger.setDataInteger(new DataInteger());
+       sampleDataInteger.getDataInteger().setInteger(6);
+       validate(sampleDataInteger);
     }
 }
